@@ -16,6 +16,8 @@ private:
     wxButton *button;
     wxButton *otherButton;
 
+    wxStaticText *label;
+
     void OnButtonClick(wxCommandEvent &e);
 };
 
@@ -37,11 +39,14 @@ MyFrame::MyFrame(const wxString &title, const wxPoint &pos, const wxSize &size)
     wxPanel *panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, this->FromDIP(wxSize(320, 240)));
     wxSizer *panelSizer = new wxBoxSizer(wxVERTICAL);
 
+    label = new wxStaticText(panel, wxID_ANY, "Click Start", wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL);
+
     button = new wxButton(panel, wxID_ANY, "Start");
     button->Bind(wxEVT_BUTTON, &MyFrame::OnButtonClick, this);
 
     otherButton = new wxButton(panel, wxID_ANY, "Dummy Button");
 
+    panelSizer->Add(label, 1, wxEXPAND | wxALL, this->FromDIP(20));
     panelSizer->Add(button, 0, wxALIGN_CENTER | wxALL, this->FromDIP(5));
     panelSizer->Add(otherButton, 0, wxALIGN_CENTER | wxBOTTOM, this->FromDIP(20));
 
@@ -55,4 +60,25 @@ MyFrame::MyFrame(const wxString &title, const wxPoint &pos, const wxSize &size)
 
 void MyFrame::OnButtonClick(wxCommandEvent &e)
 {
+    std::vector<int> arr(50000, 5);
+    arr.back() = 3;
+
+    int n = arr.size();
+
+    this->label->SetLabelText(wxString::Format("Sorting the array of %d elements...", n));
+    this->Layout();
+
+    for (int i = 0; i < n - 1; i++)
+    {
+        for (int j = 0; j < n - i - 1; j++)
+        {
+            if (arr[j] > arr[j + 1])
+            {
+                std::swap(arr[j], arr[j + 1]);
+            }
+        }
+    }
+
+    this->label->SetLabelText(wxString::Format("The first number is: %d", arr.front()));
+    this->Layout();
 }
