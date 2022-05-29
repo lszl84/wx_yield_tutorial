@@ -1,4 +1,5 @@
 #include <wx/wx.h>
+#include <chrono>
 
 class MyApp : public wxApp
 {
@@ -71,6 +72,7 @@ void MyFrame::OnButtonClick(wxCommandEvent &e)
     this->label->SetLabelText(wxString::Format("Sorting the array of %d elements...", n));
     this->Layout();
 
+    auto start = std::chrono::steady_clock::now();
     for (int i = 0; i < n - 1; i++)
     {
         this->progressBar->SetValue(i * this->progressBar->GetRange() / (n - 2));
@@ -85,6 +87,10 @@ void MyFrame::OnButtonClick(wxCommandEvent &e)
         }
     }
 
-    this->label->SetLabelText(wxString::Format("The first number is: %d", arr.front()));
+    auto end = std::chrono::steady_clock::now();
+    auto diff = end - start;
+
+    this->label->SetLabelText(wxString::Format("The first number is: %d.\nProcessing time: %.2f [ms]", arr.front(), std::chrono::duration<double, std::milli>(diff).count()));
+
     this->Layout();
 }
