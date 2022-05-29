@@ -20,7 +20,11 @@ private:
     wxStaticText *label;
     wxGauge *progressBar;
 
+    bool processing = false;
+    bool quitRequested = false;
+
     void OnButtonClick(wxCommandEvent &e);
+    void OnClose(wxCloseEvent &e);
 };
 
 wxIMPLEMENT_APP(MyApp);
@@ -60,37 +64,67 @@ MyFrame::MyFrame(const wxString &title, const wxPoint &pos, const wxSize &size)
     sizer->Add(centeringSizer, 1, wxALIGN_CENTER);
 
     this->SetSizerAndFit(sizer);
+
+    this->Bind(wxEVT_CLOSE_WINDOW, &MyFrame::OnClose, this);
 }
 
 void MyFrame::OnButtonClick(wxCommandEvent &e)
 {
-    std::vector<int> arr(50000, 5);
-    arr.back() = 3;
-
-    int n = arr.size();
-
-    this->label->SetLabelText(wxString::Format("Sorting the array of %d elements...", n));
-    this->Layout();
-
-    auto start = std::chrono::steady_clock::now();
-    for (int i = 0; i < n - 1; i++)
+    if (!this->processing)
     {
-        this->progressBar->SetValue(i * this->progressBar->GetRange() / (n - 2));
-        wxYield();
+        this->processing = true;
 
-        for (int j = 0; j < n - i - 1; j++)
+        std::vector<int> arr(50000, 5);
+        arr.back() = 3;
+
+        int n = arr.size();
+
+        this->label->SetLabelText(wxString::Format("Sorting the array of %d elements...", n));
+        this->Layout();
+
+        auto start = std::chrono::steady_clock::now();
+        for (int i = 0; i < n - 1; i++)
         {
-            if (arr[j] > arr[j + 1])
+            this->progressBar->SetValue(i * this->progressBar->GetRange() / (n - 2));
+            wxYield();
+
+            for (int j = 0; j < n - i - 1; j++)
             {
-                std::swap(arr[j], arr[j + 1]);
+                if (arr[j] > arr[j + 1])
+                {
+                    std::swap(arr[j], arr[j + 1]);
+                }
+
+                if (this->quitRequested)
+                {
+                    this->processing = false;
+                    this->Destroy();
+                    return;
+                }
             }
         }
+
+        auto end = std::chrono::steady_clock::now();
+        auto diff = end - start;
+
+        this->label->SetLabelText(wxString::Format("The first number is: %d.\nProcessing time: %.2f [ms]", arr.front(), std::chrono::duration<double, std::milli>(diff).count()));
+
+        this->Layout();
+
+        this->processing = false;
     }
+}
 
-    auto end = std::chrono::steady_clock::now();
-    auto diff = end - start;
+void MyFrame::OnClose(wxCloseEvent &e)
+{
+    if (this->processing)
+    {
+        e.Veto();
 
-    this->label->SetLabelText(wxString::Format("The first number is: %d.\nProcessing time: %.2f [ms]", arr.front(), std::chrono::duration<double, std::milli>(diff).count()));
-
-    this->Layout();
+        this->quitRequested = true;
+    }
+    else
+    {
+        this->Destroy();
+    }
 }
