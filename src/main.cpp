@@ -17,6 +17,7 @@ private:
     wxButton *otherButton;
 
     wxStaticText *label;
+    wxGauge *progressBar;
 
     void OnButtonClick(wxCommandEvent &e);
 };
@@ -40,6 +41,7 @@ MyFrame::MyFrame(const wxString &title, const wxPoint &pos, const wxSize &size)
     wxSizer *panelSizer = new wxBoxSizer(wxVERTICAL);
 
     label = new wxStaticText(panel, wxID_ANY, "Click Start", wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL);
+    progressBar = new wxGauge(panel, wxID_ANY, 1000);
 
     button = new wxButton(panel, wxID_ANY, "Start");
     button->Bind(wxEVT_BUTTON, &MyFrame::OnButtonClick, this);
@@ -47,6 +49,7 @@ MyFrame::MyFrame(const wxString &title, const wxPoint &pos, const wxSize &size)
     otherButton = new wxButton(panel, wxID_ANY, "Dummy Button");
 
     panelSizer->Add(label, 1, wxEXPAND | wxALL, this->FromDIP(20));
+    panelSizer->Add(progressBar, 1, wxEXPAND | wxALL, this->FromDIP(20));
     panelSizer->Add(button, 0, wxALIGN_CENTER | wxALL, this->FromDIP(5));
     panelSizer->Add(otherButton, 0, wxALIGN_CENTER | wxBOTTOM, this->FromDIP(20));
 
@@ -70,6 +73,9 @@ void MyFrame::OnButtonClick(wxCommandEvent &e)
 
     for (int i = 0; i < n - 1; i++)
     {
+        this->progressBar->SetValue(i * this->progressBar->GetRange() / (n - 2));
+        wxYield();
+
         for (int j = 0; j < n - i - 1; j++)
         {
             if (arr[j] > arr[j + 1])
