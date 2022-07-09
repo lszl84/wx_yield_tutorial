@@ -1,5 +1,8 @@
 #include <wx/wx.h>
 #include <chrono>
+#include <memory>
+
+#include "chunkedsort.h"
 
 class MyApp : public wxApp
 {
@@ -20,11 +23,11 @@ private:
     wxStaticText *label;
     wxGauge *progressBar;
 
-    bool processing = false;
-    bool quitRequested = false;
+    std::unique_ptr<ChunkedSort<int>> sortOp;
+    std::chrono::steady_clock::time_point startTime;
 
     void OnButtonClick(wxCommandEvent &e);
-    void OnClose(wxCloseEvent &e);
+    void OnIdle(wxIdleEvent &e);
 };
 
 wxIMPLEMENT_APP(MyApp);
@@ -64,67 +67,45 @@ MyFrame::MyFrame(const wxString &title, const wxPoint &pos, const wxSize &size)
     sizer->Add(centeringSizer, 1, wxALIGN_CENTER);
 
     this->SetSizerAndFit(sizer);
-
-    this->Bind(wxEVT_CLOSE_WINDOW, &MyFrame::OnClose, this);
 }
 
 void MyFrame::OnButtonClick(wxCommandEvent &e)
 {
-    if (!this->processing)
+    if (!this->sortOp)
     {
-        this->processing = true;
-
         std::vector<int> arr(50000, 5);
         arr.back() = 3;
 
-        int n = arr.size();
+        this->sortOp = std::make_unique<ChunkedSort<int>>(std::move(arr));
 
-        this->label->SetLabelText(wxString::Format("Sorting the array of %d elements...", n));
+        this->label->SetLabelText(wxString::Format("Sorting the array of %zu elements...", this->sortOp->arr.size()));
         this->Layout();
 
-        auto start = std::chrono::steady_clock::now();
-        for (int i = 0; i < n - 1; i++)
-        {
-            this->progressBar->SetValue(i * this->progressBar->GetRange() / (n - 2));
-            wxYield();
-
-            for (int j = 0; j < n - i - 1; j++)
-            {
-                if (arr[j] > arr[j + 1])
-                {
-                    std::swap(arr[j], arr[j + 1]);
-                }
-
-                if (this->quitRequested)
-                {
-                    this->processing = false;
-                    this->Destroy();
-                    return;
-                }
-            }
-        }
-
-        auto end = std::chrono::steady_clock::now();
-        auto diff = end - start;
-
-        this->label->SetLabelText(wxString::Format("The first number is: %d.\nProcessing time: %.2f [ms]", arr.front(), std::chrono::duration<double, std::milli>(diff).count()));
-
-        this->Layout();
-
-        this->processing = false;
+        startTime = std::chrono::steady_clock::now();
+        this->Bind(wxEVT_IDLE, &MyFrame::OnIdle, this);
     }
 }
 
-void MyFrame::OnClose(wxCloseEvent &e)
+void MyFrame::OnIdle(wxIdleEvent &e)
 {
-    if (this->processing)
+    if (this->sortOp)
     {
-        e.Veto();
+        if (this->sortOp->finished())
+        {
+            auto endTime = std::chrono::steady_clock::now();
+            auto diff = endTime - startTime;
+            this->label->SetLabelText(wxString::Format("The first number is: %d.\nProcessing time: %.2f [ms]", this->sortOp->arr.front(), std::chrono::duration<double, std::milli>(diff).count()));
+            this->Layout();
 
-        this->quitRequested = true;
-    }
-    else
-    {
-        this->Destroy();
+            this->Unbind(wxEVT_IDLE, &MyFrame::OnIdle, this);
+            this->sortOp = {};
+        }
+        else
+        {
+            this->sortOp->processChunk();
+            this->progressBar->SetValue(this->sortOp->getProgress(this->progressBar->GetRange()));
+
+            e.RequestMore();
+        }
     }
 }
