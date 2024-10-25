@@ -9,5 +9,5 @@ More info:
 
 
 ---
-Check out the blog for more! [www.justdevtutorials.com](https://www.justdevtutorials.com)
+Check out the blog for more! [www.lukesdevtutorials.com](https://www.lukesdevtutorials.com)
 ---
