@@ -9,5 +9,5 @@ More info:
 
 
 ---
-Check out the blog for more! [www.onlyfastcode.com](https://www.onlyfastcode.com)
+Check out the blog for more! [devmindscape.com](https://devmindscape.com)
 ---
